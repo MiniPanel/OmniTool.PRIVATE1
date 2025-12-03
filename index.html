@@ -17,32 +17,7 @@
             display: flex;
         }
 
-        /* Hamburger Icon Styles */
-        .hamburger-menu {
-            position: absolute;
-            top: 10px;
-            left: 10px;
-            display: flex;
-            flex-direction: column;
-            justify-content: space-around;
-            width: 30px;
-            height: 25px;
-            background: transparent;
-            border: none;
-            cursor: pointer;
-            padding: 0;
-            z-index: 10; /* Ensure it's above other elements */
-            transition: opacity 0.3s;
-        }
-
-        .hamburger-menu .bar {
-            width: 100%;
-            height: 3px;
-            background-color: white;
-            border-radius: 3px;
-            transition: all 0.3s ease;
-        }
-
+       
         /* Sidebar Styles */
         .sidebar {
             width: 220px;
@@ -58,24 +33,6 @@
             z-index: 5;
             box-shadow: 2px 0 8px rgba(0,0,0,0.18); /* Slight shadow for depth */
         }
-
-        .sidebar.minimized {
-            transform: translateX(-220px);
-        }
-
-        /* Overlay for sidebar */
-        .sidebar-overlay {
-            display: none;
-            position: fixed;
-            top: 0; left: 0; width: 100vw; height: 100vh;
-            background: rgba(0,0,0,0.3);
-            z-index: 4;
-            transition: opacity 0.3s;
-        }
-        .sidebar-overlay.active {
-            display: block;
-        }
-
         .tab-list {
             display: flex;
             flex-direction: column;
@@ -149,10 +106,6 @@
             transition: margin-left 0.3s cubic-bezier(.4,1.2,.6,1);
         }
 
-        .content.minimized {
-            margin-left: 0;
-        }
-
         iframe {
             width: 100%;
             height: calc(100% - 0px);
@@ -169,9 +122,6 @@
                 min-width: 180px;
                 max-width: 320px;
             }
-            .sidebar.minimized {
-                transform: translateX(-75vw);
-            }
             .content {
                 margin-left: 0 !important;
             }
@@ -183,15 +133,7 @@
 </head>
 <body>
 
-    <button class="hamburger-menu" id="hamburgerBtn" aria-label="Open sidebar" aria-expanded="false">
-        <span class="bar"></span>
-        <span class="bar"></span>
-        <span class="bar"></span>
-    </button>
-
-    <div class="sidebar-overlay" id="sidebarOverlay"></div>
-
-    <div class="sidebar minimized" id="sidebar" aria-label="Sidebar Navigation">
+<div class="sidebar" id="sidebar"> aria-label="Sidebar Navigation">
         <div class="tab-list" id="tabList">
             <button class="tab-item active" id="tab-ts101" data-page="TS_101.html" tabindex="0" draggable="true">TROUBLESHOOTING</button>
             <button class="tab-item" id="tab-templates" data-page="TEMPLATES.html" tabindex="0" draggable="true">TEMPLATES</button>
@@ -211,14 +153,12 @@
         </div>
     </div>
 
-    <div class="content minimized" id="content">
+<div class="content" id="content">
         <iframe id="contentFrame" src="TS_101.html"></iframe>
     </div>
 
     <script>
-        const hamburgerBtn = document.getElementById('hamburgerBtn');
         const sidebar = document.getElementById('sidebar');
-        const sidebarOverlay = document.getElementById('sidebarOverlay');
         const content = document.getElementById('content');
         const tabList = document.getElementById('tabList');
         let tabButtons = tabList.querySelectorAll('.tab-item');
@@ -249,45 +189,11 @@
             }
         }
 
-        // Initial state: sidebar hidden, hamburger visible, content minimized
-        function setSidebarMinimized(minimized) {
-            if (minimized) {
-                sidebar.classList.add('minimized');
-                content.classList.add('minimized');
-                sidebarOverlay.classList.remove('active');
-                hamburgerBtn.setAttribute('aria-expanded', 'false');
-            } else {
-                sidebar.classList.remove('minimized');
-                content.classList.remove('minimized');
-                sidebarOverlay.classList.add('active');
-                hamburgerBtn.setAttribute('aria-expanded', 'true');
-            }
-        }
-
-        // Hamburger click toggles sidebar/menu
-        hamburgerBtn.addEventListener('click', () => {
-            setSidebarMinimized(sidebar.classList.contains('minimized') ? false : true);
-        });
-
-        // Overlay click closes sidebar
-        sidebarOverlay.addEventListener('click', () => {
-            setSidebarMinimized(true);
-        });
-
         // Space bar toggles sidebar/menu
         document.addEventListener('keydown', function(e) {
             // If focus is on input or textarea, ignore
             const tag = document.activeElement.tagName.toLowerCase();
             if ((tag === 'input' || tag === 'textarea')) return;
-
-            if (e.code === 'Space' || e.key === ' ') {
-                e.preventDefault();
-                setSidebarMinimized(sidebar.classList.contains('minimized') ? false : true);
-            }
-            // Esc closes sidebar for accessibility
-            if (e.code === 'Escape' || e.key === 'Escape') {
-                setSidebarMinimized(true);
-            }
             // Keyboard navigation for tabs (left/right or up/down arrows)
             if ((e.code === 'ArrowDown' || e.code === 'ArrowUp') && sidebar && !sidebar.classList.contains('minimized')) {
                 let tabs = Array.from(tabButtons);
@@ -314,7 +220,6 @@
                     // Load page
                     iframe.src = this.getAttribute('data-page');
                     // Hide sidebar but keep hamburger visible
-                    setSidebarMinimized(true);
                     // Save selected tab to localStorage
                     localStorage.setItem('lastActiveTab', this.id);
                 });
@@ -401,7 +306,7 @@
             tabButtons = tabList.querySelectorAll('.tab-item');
             setTabClickHandlers();
             setTabDragHandlers();
-            setSidebarMinimized(true);
+
 
             // Restore the last active tab, if any
             const lastActiveTabId = localStorage.getItem('lastActiveTab');
@@ -429,4 +334,5 @@
 </body>
 
 </html>
+
 
