@@ -1,0 +1,462 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>CC's</title>
+  <style>
+    :root{
+      --bg:#ffc8d0; /* light pink background */
+      --btn-from:#ef4765;
+      --btn-to:#ff9a5a;
+      --btn-radius:28px;
+      --container-width:560px;
+      --gap:18px;
+    }
+
+    /* DEFAULT VIEW: 75% */
+    /* Use zoom where available and transform fallback for broader compatibility */
+    html {
+      zoom: 0.75; /* primary (non-standard but supported by most browsers) */
+    }
+    @supports not (zoom: 0.75) {
+      body {
+        transform: scale(0.75);
+        transform-origin: top center;
+      }
+    }
+
+    html,body{
+      height:100%;
+      margin:0;
+      font-family: "Helvetica Neue", Arial, sans-serif;
+      background:var(--bg);
+      color:#222;
+      -webkit-font-smoothing:antialiased;
+      -moz-osx-font-smoothing:grayscale;
+    }
+
+    .wrap{
+      min-height:100%;
+      display:flex;
+      align-items:flex-start;
+      justify-content:center;
+      padding:48px 16px;
+      box-sizing:border-box;
+    }
+
+    .panel{
+      width:100%;
+      max-width:var(--container-width);
+      text-align:center;
+    }
+
+    h1{
+      margin:0 0 30px 0;
+      font-size:36px;
+      letter-spacing:1px;
+      color:#444;
+      font-weight:700;
+    }
+
+    .top-actions {
+      display:flex;
+      justify-content:flex-end;
+      margin-bottom: 12px;
+      gap:8px;
+    }
+
+    .add-btn {
+      background:#4a90e2;
+      border:0;
+      color:#fff;
+      padding:8px 14px;
+      border-radius:10px;
+      font-weight:700;
+      cursor:pointer;
+      box-shadow:0 6px 18px rgba(0,0,0,0.08);
+    }
+
+    /* Vertical stack */
+    .buttons-vertical {
+      display:flex;
+      flex-direction:column;
+      gap:var(--gap);
+      align-items:center;
+      margin: 0 auto;
+      padding-bottom:48px;
+    }
+
+    .cc-button {
+      width:100%;
+      max-width:460px;
+      background: linear-gradient(135deg, var(--btn-from), var(--btn-to));
+      border:0;
+      color:#fff;
+      padding:16px 22px;
+      border-radius:var(--btn-radius);
+      font-size:18px;
+      font-weight:700;
+      text-align:center;
+      cursor:pointer;
+      box-shadow: 0 6px 18px rgba(0,0,0,0.08), inset 0 -6px 18px rgba(255,255,255,0.02);
+      transition: transform .08s ease, box-shadow .12s ease, opacity .12s ease;
+      user-select:none;
+      display:block;
+    }
+
+    .cc-button:hover{
+      transform: translateY(-2px);
+      box-shadow: 0 12px 26px rgba(0,0,0,0.12);
+    }
+
+    .cc-button:active{
+      transform: translateY(0px) scale(.995);
+    }
+
+    .cc-button .num {
+      display:inline-block;
+      margin-right:10px;
+      opacity:.95;
+    }
+
+    .cc-button .label {
+      display:inline-block;
+      vertical-align:middle;
+    }
+
+    /* subtle center alignment for the column */
+    .center-col { display:flex; flex-direction:column; align-items:center; }
+
+    /* modal */
+    .modal-overlay{
+      position:fixed;
+      inset:0;
+      display:none;
+      align-items:center;
+      justify-content:center;
+      background:rgba(0,0,0,0.45);
+      z-index:2000;
+    }
+    .modal {
+      width:min(92%,720px);
+      background:#fff;
+      border-radius:10px;
+      padding:16px;
+      box-shadow:0 18px 60px rgba(0,0,0,0.25);
+      color:#222;
+    }
+    .modal h3 { margin:0 0 8px 0; font-size:18px; }
+    .modal textarea{
+      width:100%;
+      min-height:160px;
+      box-sizing:border-box;
+      padding:10px;
+      border-radius:8px;
+      border:1px solid #e6e6e6;
+      font-family:inherit;
+      resize:vertical;
+      font-size:13px;
+    }
+    .modal .controls {
+      display:flex;
+      justify-content:flex-end;
+      gap:8px;
+      margin-top:10px;
+    }
+    .btn {
+      padding:8px 12px;
+      border-radius:8px;
+      border:0;
+      cursor:pointer;
+    }
+    .btn.secondary { background:#eee; color:#222; }
+    .btn.primary { background:#4a90e2; color:#fff; font-weight:700; }
+
+    /* toast */
+    #toast {
+      position:fixed;
+      left:50%;
+      transform:translateX(-50%);
+      bottom:28px;
+      background:rgba(0,0,0,0.8);
+      color:#fff;
+      padding:8px 14px;
+      border-radius:8px;
+      display:none;
+      z-index:3000;
+      font-size:14px;
+    }
+
+    @media (max-width:520px){
+      .panel{ padding:0 6px; }
+      .cc-button { max-width:100%; font-size:16px; padding:14px; }
+      h1 { font-size:28px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="panel">
+      <div class="top-actions">
+        <button id="addJsonBtn" class="add-btn" title="Add JSON">＋</button>
+      </div>
+
+      <h1>CC's</h1>
+
+      <div class="buttons-vertical center-col" id="buttonContainer">
+        <!-- Buttons will be injected here, stacked one below the other -->
+      </div>
+    </div>
+  </div>
+
+  <div id="toast"></div>
+
+  <!-- Modal for adding JSON -->
+  <div class="modal-overlay" id="modalOverlay" onclick="if(event.target===this) closeModal()">
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+      <h3 id="modalTitle">Add JSON (code.js will be attached automatically)</h3>
+      <div style="color:#444; font-size:13px; margin-bottom:8px">
+        Paste a single CTC object or an array of CTC objects, or an exported object that contains a "ctcs" array.
+        When you open this modal the file "code.js" (if reachable at ./code.js) will be fetched and inserted into the "attachedFiles" property so it is included automatically.
+      </div>
+      <textarea id="modalTextarea" placeholder='e.g. { "label":"1. Hello", "content":"some text to copy" } or [ { "label":"A","content":"..." }, ... ]'></textarea>
+      <div style="display:flex; gap:8px; align-items:center; margin-top:8px;">
+        <label for="fileUpload" style="cursor:pointer; background:#f2f2f2; padding:8px 10px; border-radius:6px; border:1px solid #e0e0e0;">Choose file…</label>
+        <input id="fileUpload" type="file" accept="application/json" style="display:none;">
+        <div style="flex:1"></div>
+        <div class="controls">
+          <button id="modalCancel" class="btn secondary">Cancel</button>
+          <button id="modalAppend" class="btn primary">Append</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // storage key
+    const STORAGE_KEY = 'ctcs';
+    const ATTACHED_KEY = 'attachedFiles'; // optional storage of attached files
+
+    const buttonContainer = document.getElementById('buttonContainer');
+    const addJsonBtn = document.getElementById('addJsonBtn');
+    const modalOverlay = document.getElementById('modalOverlay');
+    const modalTextarea = document.getElementById('modalTextarea');
+    const fileUpload = document.getElementById('fileUpload');
+    const modalCancel = document.getElementById('modalCancel');
+    const modalAppend = document.getElementById('modalAppend');
+    const toast = document.getElementById('toast');
+
+    function readCtcs() {
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY) || '[]';
+        const parsed = JSON.parse(raw);
+        return Array.isArray(parsed) ? parsed : [];
+      } catch {
+        return [];
+      }
+    }
+
+    function writeCtcs(arr) {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(arr));
+    }
+
+    function readAttached() {
+      try {
+        const raw = localStorage.getItem(ATTACHED_KEY) || '[]';
+        const parsed = JSON.parse(raw);
+        return Array.isArray(parsed) ? parsed : [];
+      } catch {
+        return [];
+      }
+    }
+
+    function writeAttached(arr) {
+      localStorage.setItem(ATTACHED_KEY, JSON.stringify(arr));
+    }
+
+    function renderButtons() {
+      buttonContainer.innerHTML = '';
+      const ctcs = readCtcs();
+      // per request: when empty, show nothing (no placeholder)
+      if (!ctcs || ctcs.length === 0) return;
+
+      ctcs.forEach((item, idx) => {
+        const btn = document.createElement('button');
+        btn.className = 'cc-button';
+        // add numbering like "1. Label"
+        const numSpan = document.createElement('span');
+        numSpan.className = 'num';
+        numSpan.textContent = (idx + 1) + '.';
+        const labelSpan = document.createElement('span');
+        labelSpan.className = 'label';
+        labelSpan.textContent = (item.label !== undefined && item.label !== null && String(item.label).trim() !== '') ? String(item.label) : ('Item ' + (idx+1));
+        // assemble
+        btn.appendChild(numSpan);
+        btn.appendChild(labelSpan);
+
+        btn.title = (item.content || '').slice(0, 500);
+
+        btn.addEventListener('click', async () => {
+          const txt = item.content || '';
+          try {
+            await navigator.clipboard.writeText(txt);
+            showToast('Copied to clipboard');
+          } catch (err) {
+            // fallback
+            const ta = document.createElement('textarea');
+            ta.value = txt;
+            document.body.appendChild(ta);
+            ta.select();
+            try {
+              document.execCommand('copy');
+              showToast('Copied to clipboard');
+            } catch {
+              showToast('Copy failed — copy manually');
+            }
+            document.body.removeChild(ta);
+          }
+          // visual feedback
+          btn.style.transform = 'scale(.995)';
+          setTimeout(()=> btn.style.transform = '', 160);
+        });
+
+        buttonContainer.appendChild(btn);
+      });
+    }
+
+    // When opening the modal, fetch ./code.js and prefill the textarea with JSON that includes attachedFiles: [{name: 'code.js', content: '...'}]
+    addJsonBtn.addEventListener('click', async () => {
+      modalTextarea.value = '';
+      fileUpload.value = '';
+
+      // attempt to fetch code.js from the same directory
+      try {
+        const resp = await fetch('./code.js', {cache: "no-store"});
+        if (resp.ok) {
+          const jsText = await resp.text();
+          // create starter JSON with attachedFiles
+          const starter = {
+            ctcs: [],
+            attachedFiles: [
+              {
+                name: "code.js",
+                content: jsText
+              }
+            ]
+          };
+          modalTextarea.value = JSON.stringify(starter, null, 2);
+        } else {
+          // if code.js not found, provide an empty starter (ctcs array)
+          modalTextarea.value = JSON.stringify({ ctcs: [] }, null, 2);
+        }
+      } catch (err) {
+        // network error or CORS — fallback to empty starter
+        modalTextarea.value = JSON.stringify({ ctcs: [] }, null, 2);
+      }
+
+      openModal();
+    });
+
+    modalCancel.addEventListener('click', closeModal);
+
+    fileUpload.addEventListener('change', (ev) => {
+      const f = ev.target.files && ev.target.files[0];
+      if (!f) return;
+      const reader = new FileReader();
+      reader.onload = (e) => modalTextarea.value = e.target.result;
+      reader.readAsText(f);
+    });
+
+    modalAppend.addEventListener('click', () => {
+      const raw = modalTextarea.value.trim();
+      if (!raw) {
+        if (!confirm('No JSON provided. Close without adding?')) return;
+        closeModal();
+        return;
+      }
+      let parsed;
+      try {
+        parsed = JSON.parse(raw);
+      } catch (err) {
+        alert('Invalid JSON. Please correct and try again.');
+        return;
+      }
+
+      // If the user provided an object with attachedFiles, persist them to a separate key too
+      if (parsed && typeof parsed === 'object' && Array.isArray(parsed.attachedFiles)) {
+        // merge attached files in storage
+        const existingAttached = readAttached();
+        const newAttached = parsed.attachedFiles.filter(f => f && f.name).map(f => ({
+          name: String(f.name),
+          content: String(f.content || '')
+        }));
+        // naive append
+        writeAttached(existingAttached.concat(newAttached));
+      }
+
+      let toAppend = [];
+      if (Array.isArray(parsed)) {
+        toAppend = parsed.filter(i => i && typeof i === 'object');
+      } else if (parsed && typeof parsed === 'object') {
+        if (Array.isArray(parsed.ctcs)) {
+          toAppend = parsed.ctcs.filter(i => i && typeof i === 'object');
+        } else if (parsed.label !== undefined || parsed.content !== undefined) {
+          toAppend = [parsed];
+        } else if (Array.isArray(parsed.ctc)) {
+          toAppend = parsed.ctc.filter(i => i && typeof i === 'object');
+        } else {
+          // If the object does not contain ctcs but contains top-level objects keyed by label (legacy), try to extract values that look like ctcs
+          // e.g. { "1. Foo": {label:"", content:""}} — but conservatively reject
+          alert('JSON doesn\'t include recognizable CTC items. Provide a single CTC object, an array of CTCs, or an object with a "ctcs" array.');
+          return;
+        }
+      } else {
+        alert('Unsupported JSON structure.');
+        return;
+      }
+
+      if (toAppend.length === 0) {
+        alert('No valid CTC items found to append.');
+        return;
+      }
+
+      const normalized = toAppend.map(it => ({
+        id: it.id || ('ctc_' + Date.now() + '_' + Math.floor(Math.random()*1000)),
+        label: (it.label !== undefined ? String(it.label) : (it.name || 'Copy')),
+        content: (it.content !== undefined ? String(it.content) : (it.text || ''))
+      }));
+
+      const existing = readCtcs();
+      const merged = existing.concat(normalized);
+      writeCtcs(merged);
+      renderButtons();
+      closeModal();
+      showToast(`Appended ${normalized.length} item(s)`);
+    });
+
+    function openModal() {
+      modalOverlay.style.display = 'flex';
+      modalTextarea.focus();
+    }
+    function closeModal() {
+      modalOverlay.style.display = 'none';
+    }
+
+    function showToast(msg, ms = 1400) {
+      toast.textContent = msg;
+      toast.style.display = 'block';
+      clearTimeout(toast._t);
+      toast._t = setTimeout(()=> toast.style.display = 'none', ms);
+    }
+
+    // initial render
+    renderButtons();
+
+    // keep UI in sync if other window/tab updates storage
+    window.addEventListener('storage', (e) => {
+      if (e.key === STORAGE_KEY) renderButtons();
+    });
+  </script>
+</body>
+</html>
